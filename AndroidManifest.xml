@@ -37,5 +37,7 @@
                   android:label="@string/select_device"
                   android:theme="@android:style/Theme.Holo.Dialog"
                   android:configChanges="orientation|keyboardHidden" />
+        <activity android:name=".ColorPanel"
+                  android:label="@string/colorpanel" />
     </application>
 </manifest>

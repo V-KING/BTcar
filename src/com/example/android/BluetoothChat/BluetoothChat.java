@@ -16,11 +16,14 @@
 
 package com.example.android.BluetoothChat;
 
+import java.lang.reflect.Field;
+
 import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.location.Address;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -30,7 +33,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
+import android.view.ViewConfiguration;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
@@ -45,7 +48,7 @@ import android.widget.Toast;
  */
 public class BluetoothChat extends Activity {
     // Debugging
-    private static final String TAG = "debug";
+    private static final String TAG = "BluetoothChat";
     private static final boolean D = true;
 
     // Message types sent from the BluetoothChatService Handler
@@ -58,11 +61,11 @@ public class BluetoothChat extends Activity {
     // Key names received from the BluetoothChatService Handler
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
-
+    
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
-    private static final int REQUEST_CONNECT_DEVICE_INSECURE = 2;
-    private static final int REQUEST_ENABLE_BT = 3;
+    private static final int REQUEST_COLOR_PANEL = 2;
+    static final int REQUEST_ENABLE_BT = 3;
 
     // Layout Views
     private ListView mConversationView;
@@ -80,6 +83,8 @@ public class BluetoothChat extends Activity {
     // Member object for the chat services
     private BluetoothChatService mChatService = null;
 
+    //send to colorPanel
+    public static String address = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -98,6 +103,30 @@ public class BluetoothChat extends Activity {
             finish();
             return;
         }
+        ActionBar actionBar = getActionBar();  
+        // 是否显示应用程序图标，默认为true  
+        actionBar.setDisplayShowHomeEnabled(true);  
+        // 是否显示应用程序标题，默认为true  
+        actionBar.setDisplayShowTitleEnabled(true);  
+  
+        /* 
+         * 是否将应用程序图标转变成可点击的按钮，默认为false。 
+         *  
+         * 如果设置了DisplayHomeAsUpEnabled为true， 
+         *  
+         * 则该设置自动为 true。 
+         */  
+        actionBar.setHomeButtonEnabled(true);  
+        /* 
+         * 在应用程序图标的左边显示一个向左的箭头， 
+         *  
+         * 并且将HomeButtonEnabled设为true。 
+         *  
+         * 默认为false。 
+         */  
+        actionBar.setDisplayHomeAsUpEnabled(false);  
+  
+        forceShowOverflowMenu();  
     }
 
     @Override
@@ -120,7 +149,6 @@ public class BluetoothChat extends Activity {
     public synchronized void onResume() {
         super.onResume();
         if(D) Log.e(TAG, "+ ON RESUME +");
-
         // Performing this check in onResume() covers the case in which BT was
         // not enabled during onStart(), so we were paused to enable it...
         // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
@@ -132,6 +160,23 @@ public class BluetoothChat extends Activity {
             }
         }
     }
+    
+    /** 
+     * 如果设备有物理菜单按键，需要将其屏蔽才能显示OverflowMenu 
+     */  
+    private void forceShowOverflowMenu() {  
+        try {  
+            ViewConfiguration config = ViewConfiguration.get(this);  
+            Field menuKeyField = ViewConfiguration.class  
+                    .getDeclaredField("sHasPermanentMenuKey");  
+            if (menuKeyField != null) {  
+                menuKeyField.setAccessible(true);  
+                menuKeyField.setBoolean(config, false);  
+            }  
+        } catch (Exception e) {  
+            e.printStackTrace();  
+        }  
+    }  
 
     private void setupChat() {
         Log.d(TAG, "setupChat()");
@@ -183,7 +228,7 @@ public class BluetoothChat extends Activity {
         if(D) Log.e(TAG, "--- ON DESTROY ---");
     }
 
-    private void ensureDiscoverable() {
+    public void ensureDiscoverable() {
         if(D) Log.d(TAG, "ensure discoverable");
         if (mBluetoothAdapter.getScanMode() !=
             BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
@@ -239,7 +284,7 @@ public class BluetoothChat extends Activity {
         final ActionBar actionBar = getActionBar();
         actionBar.setSubtitle(subTitle);
     }
-
+    
     // The Handler that gets information back from the BluetoothChatService
     private final Handler mHandler = new Handler() {
         @Override
@@ -286,6 +331,7 @@ public class BluetoothChat extends Activity {
             }
         }
     };
+    
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(D) Log.d(TAG, "onActivityResult " + resultCode);
@@ -296,11 +342,7 @@ public class BluetoothChat extends Activity {
                 connectDevice(data, true);
             }
             break;
-        case REQUEST_CONNECT_DEVICE_INSECURE:
-            // When DeviceListActivity returns with a device to connect
-            if (resultCode == Activity.RESULT_OK) {
-                connectDevice(data, false);
-            }
+        case REQUEST_COLOR_PANEL:
             break;
         case REQUEST_ENABLE_BT:
             // When the request to enable Bluetooth returns
@@ -330,7 +372,7 @@ public class BluetoothChat extends Activity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.option_menu, menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);  
     }
 
     @Override
@@ -342,17 +384,19 @@ public class BluetoothChat extends Activity {
             serverIntent = new Intent(this, DeviceListActivity.class);
             startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
             return true;
-        case R.id.insecure_connect_scan:
-            // Launch the DeviceListActivity to see devices and do scan
-            serverIntent = new Intent(this, DeviceListActivity.class);
-            startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_INSECURE);
-            return true;
         case R.id.discoverable:
             // Ensure this device is discoverable by others
             ensureDiscoverable();
             return true;
+        case R.id.color_panel:
+        	mChatService.stop();
+            // Launch the DeviceListActivity to see devices and do scan
+            Intent intent = new Intent(this, ColorPanel.class);
+            Log.d(TAG, "------>"+address);
+            intent.putExtra(DeviceListActivity.EXTRA_DEVICE_ADDRESS, address);
+            startActivity(intent);
+            return true;
         }
         return false;
     }
-
 }
