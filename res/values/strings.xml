@@ -15,30 +15,29 @@
 -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Bluetooth Chat</string>
+    <string name="app_name">BTsogworks</string>
 
     <!--  BluetoothChat -->
     <string name="send">发送</string>
     <string name="not_connected">你没有连接到一个设备</string>
     <string name="bt_not_enabled_leaving">蓝牙没开启，退出应用</string>
     <string name="title_connecting">正在连接...</string>
-    <string name="title_connected_to">connected to <xliff:g id="device_name">%1$s</xliff:g></string>
+    <string name="title_connected_to">连接到<xliff:g id="device_name">%1$s</xliff:g></string>
     <string name="title_not_connected">没有连接</string>
 
     <!--  DeviceListActivity -->
-    <string name="scanning">scanning for devices...</string>
-    <string name="select_device">select a device to connect</string>
-    <string name="none_paired">No devices have been paired</string>
-    <string name="none_found">No devices found</string>
-    <string name="title_paired_devices">Paired Devices</string>
-    <string name="title_other_devices">Other Available Devices</string>
-    <string name="button_scan">Scan for devices</string>
+    <string name="scanning">扫描...</string>
+    <string name="select_device">选择设备连接</string>
+    <string name="none_paired">没有设备配对</string>
+    <string name="none_found">没有找到</string>
+    <string name="title_paired_devices">配对的设备</string>
+    <string name="title_other_devices">其他可用设备</string>
+    <string name="button_scan">扫描</string>
     
 	<!-- colorPanel -->
     <string name="colorpanel">调色板</string>
     
     <!-- Options Menu -->
     <string name="secure_connect">连接</string>
-    <string name="color_panel">调色板</string>
     <string name="discoverable">可被附近蓝牙监测到</string>
 </resources>

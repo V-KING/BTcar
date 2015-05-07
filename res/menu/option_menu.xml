@@ -22,8 +22,4 @@
           android:icon="@android:drawable/ic_menu_mylocation"
           android:title="@string/discoverable"
           android:showAsAction="never" />
-    <item android:id="@+id/color_panel"
-          android:icon="@android:drawable/btn_plus"
-          android:title="@string/color_panel"
-          android:showAsAction="never" />
 </menu>
