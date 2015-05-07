@@ -341,6 +341,7 @@ public class BluetoothChat extends Activity {
             if (resultCode == Activity.RESULT_OK) {
                 connectDevice(data, true);
             }
+            address = data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
             break;
         case REQUEST_COLOR_PANEL:
             break;
