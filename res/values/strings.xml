@@ -15,8 +15,10 @@
 -->
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">BTsogworks</string>
-
+    <string name="app_name">信鸽作品BTcar</string>
+<string name="hello">Hello World, AccelerometerTest!</string>
+	<string name="tip">二维平面xy轴:</string>
+	<string name="search">搜索</string>
     <!--  BluetoothChat -->
     <string name="send">发送</string>
     <string name="not_connected">你没有连接到一个设备</string>
@@ -40,4 +42,10 @@
     <!-- Options Menu -->
     <string name="secure_connect">连接</string>
     <string name="discoverable">可被附近蓝牙监测到</string>
+    <string name="up">前</string>
+    <string name="back">后</string>
+    <string name="left">左</string>
+    <string name="right">右</string>
+    <string name="change_to_button_mode">按钮模式</string>
+    <string name="change_to_acceler_mode">重力传感模式</string>
 </resources>

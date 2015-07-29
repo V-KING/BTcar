@@ -13,40 +13,49 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.example.android.BluetoothChat;
+package com.vk.BTcar;
 
 import java.lang.reflect.Field;
 
-import com.vk.colorPanel.ColorPickerView;
+import com.example.android.BTcar.R;
+
 import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewConfiguration;
 import android.view.View.OnTouchListener;
-import android.widget.LinearLayout;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.SeekBar;
-import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.Toast;
 
 /**
  * This is the main Activity that displays the current chat session.
  */
-public class BluetoothChat extends Activity implements OnTouchListener,
-		OnSeekBarChangeListener {
+public class BTcar extends Activity implements OnTouchListener,
+		SensorEventListener, OnClickListener {
+	// 定义系统的Sensor管理器
+	SensorManager sensorManager;
+	EditText etTxt1;
+
 	// Debugging
 	private static final String TAG = "BluetoothChat";
 	private static final boolean D = true;
@@ -67,40 +76,65 @@ public class BluetoothChat extends Activity implements OnTouchListener,
 	private static final int REQUEST_COLOR_PANEL = 2;
 	static final int REQUEST_ENABLE_BT = 3;
 
-	private ColorPickerView colorPicker;
 	// Name of the connected device
 	private String mConnectedDeviceName = null;
 	// Local Bluetooth adapter
 	private BluetoothAdapter mBluetoothAdapter = null;
 	// Member object for the chat services
 	private BluetoothChatService mChatService = null;
-	private TextView text1;
-	private int blueStart = 100;
 
+	private Button btn_change_mode;
+	private Button btn_up;
+	private Button btn_back;
+	private Button btn_left;
+	private Button btn_right;
+	private Button btn_stop;
+	
+	//seekbar
+	private SeekBar seekBar;
+	protected int speed = 5;
 	// send to colorPanel
 	public static String address = null;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		if (D) Log.e(TAG, "+++ ON CREATE +++");
+		if (D)
+			Log.e(TAG, "+++ ON CREATE +++");
 		// Set up the window layout
 		setContentView(R.layout.color_panel);
-		// 初始化ColorPickerView
-		initColorPickerView();
-		// 设置要显示rgb的TextView
-		initTextView();
-		// 初始化seekBar
-		initSeekBar();
-		// Get local Bluetooth adapter
-		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-		// If the adapter is null, then Bluetooth is not supported
-		if (mBluetoothAdapter == null) {
-			Toast.makeText(this, "Bluetooth is not available",
-					Toast.LENGTH_LONG).show();
-			finish();
-			return;
-		}
+		
+		// liten buttons
+		btn_change_mode = (Button)findViewById(R.id.changemode);
+		btn_change_mode.setOnClickListener(this);
+		btn_stop= (Button)findViewById(R.id.stop);
+		btn_stop.setOnClickListener(this);
+		
+		// touch liten
+		btn_up= (Button)findViewById(R.id.up);
+		btn_back= (Button)findViewById(R.id.back);
+		btn_left= (Button)findViewById(R.id.left);
+		btn_right= (Button)findViewById(R.id.right);
+		
+		btn_up.setOnTouchListener(this);
+		btn_back.setOnTouchListener(this);
+		btn_left.setOnTouchListener(this);
+		btn_right.setOnTouchListener(this);
+		
+		//seekbar
+		seekBar = (SeekBar)findViewById(R.id.seekBar1);
+		seekBar.setOnSeekBarChangeListener(seekBarChangeListener);
+		seekBar.setMax(10);
+		seekBar.setProgress(5);
+				
+		
+
+		// 获取程序界面上的文本框组件
+		etTxt1 = (EditText) findViewById(R.id.txt1);
+		// 获取系统的传感器管理服务
+		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+
+		getBTadapter();
 		ActionBar actionBar = getActionBar();
 		// 是否显示应用程序图标，默认为true
 		actionBar.setDisplayShowHomeEnabled(true);
@@ -125,29 +159,38 @@ public class BluetoothChat extends Activity implements OnTouchListener,
 
 		forceShowOverflowMenu();
 	}
+	private OnSeekBarChangeListener seekBarChangeListener = new OnSeekBarChangeListener() {
+		
+		@Override
+		public void onStopTrackingTouch(SeekBar seekBar) {
+			// TODO Auto-generated method stub
+		}
+		
+		@Override
+		public void onStartTrackingTouch(SeekBar seekBar) {
+			// TODO Auto-generated method stub
+		}
+		
+		@Override
+		public void onProgressChanged(SeekBar seekBar, int progress,
+				boolean fromUser) {
+			// TODO Auto-generated method stub
+			speed = progress;
+			Log.i(TAG, "speed:" + speed);
+		}
+	}; 
 
-	private void initSeekBar() {
-		SeekBar seek = (SeekBar) findViewById(R.id.seekBar1);
-		int blueStart = 100;
-		seek.setProgress(blueStart);
-		seek.setMax(255);
-		seek.setOnSeekBarChangeListener(this);
-	}
+	private void getBTadapter() {
+		// Get local Bluetooth adapter
+		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+		// If the adapter is null, then Bluetooth is not supported
+		if (mBluetoothAdapter == null) {
+			Toast.makeText(this, "Bluetooth is not available",
+					Toast.LENGTH_LONG).show();
+			finish();
+			return;
+		}
 
-	private void initTextView() {
-		text1 = (TextView) findViewById(R.id.result1_textview);
-		text1.setText("点取颜色");
-	}
-
-	private void initColorPickerView() {
-		LinearLayout layout = (LinearLayout) findViewById(R.id.color_picker_layout);
-		final int width = layout.getWidth();
-		DisplayMetrics metrics = new DisplayMetrics();
-		getWindowManager().getDefaultDisplay().getMetrics(metrics);
-		colorPicker = new ColorPickerView(this, blueStart, metrics.densityDpi);
-		layout.setMinimumHeight(width);
-		layout.addView(colorPicker);
-		layout.setOnTouchListener(this);
 	}
 
 	@Override
@@ -172,6 +215,10 @@ public class BluetoothChat extends Activity implements OnTouchListener,
 	@Override
 	public synchronized void onResume() {
 		super.onResume();
+		// 为系统的加速度传感器注册监听器
+//		sensorManager.registerListener(this,
+//				sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+//				SensorManager.SENSOR_DELAY_GAME);
 		if (D)
 			Log.e(TAG, "+ ON RESUME +");
 		// Performing this check in onResume() covers the case in which BT was
@@ -209,8 +256,6 @@ public class BluetoothChat extends Activity implements OnTouchListener,
 		Log.d(TAG, "setupChat()");
 		// Initialize the BluetoothChatService to perform bluetooth connections
 		mChatService = new BluetoothChatService(this, mHandler);
-
-		new StringBuffer("");
 	}
 
 	@Override
@@ -223,6 +268,8 @@ public class BluetoothChat extends Activity implements OnTouchListener,
 	@Override
 	public void onStop() {
 		super.onStop();
+		// 取消注册
+		sensorManager.unregisterListener(this);
 		if (D)
 			Log.e(TAG, "-- ON STOP --");
 	}
@@ -360,81 +407,134 @@ public class BluetoothChat extends Activity implements OnTouchListener,
 		return false;
 	}
 
-	@Override
-	public void onProgressChanged(SeekBar seekBar, int progress,
-			boolean fromUser) {
-		int amt = seekBar.getProgress();
-		int col = colorPicker.updateShade(amt);
-		Log.i(TAG, "" + col);
-		sendToArduino(col);
-		colorPicker.invalidate();
-	}
-
-	private void sendToArduino(int col) {
-		int r = Color.red(col);
-		int g = Color.green(col);
-		int b = Color.blue(col);
-		String data = String.format("%03d", r) + String.format("%03d", g)
-				+ String.format("%03d", b);
+	private void sendToArduino(int x, int y) {
+		Log.i(TAG, x + "," +y);
+		String data = "<" + x + "|" + y + ">";
 		mChatService.write(data.getBytes());
-		Log.i(TAG, "send: " + data);
 	}
-
-	@Override
-	public void onStartTrackingTouch(SeekBar seekBar) {
-	}
-
-	@Override
-	public void onStopTrackingTouch(SeekBar seekBar) {
-	}
-
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
-		int color = colorPicker.getColor(event.getX(), event.getY(), true);
-		colorPicker.invalidate();
-		int r = Color.red(color);
-		int g = Color.green(color);
-		int b = Color.blue(color);
-		Log.i(TAG, r + "," + g + "," + b);
+		switch (v.getId()) {
+		case R.id.up:
+			sendToArduino(-speed, -speed);
+			break;
+		case R.id.back:
+			sendToArduino(speed, speed);
+			break;
+		case R.id.left:
+			sendToArduino(-speed, speed);
+			break;
+		case R.id.right:
+			sendToArduino(speed, -speed);
+			break;
 
-		updateTextAreas(color);
-		sendToArduino(color);
-		return true;
+		default:
+			break;
+		}
+		return false;
 	}
 
-	private void updateTextAreas(int col) {
-		int[] colBits = { Color.red(col), Color.green(col), Color.blue(col) };
-		// set the text & color backgrounds
-		int r = Color.red(col);
-		int g = Color.green(col);
-		int b = Color.blue(col);
-		text1.setText(r + "," + g + "," + b);
-		text1.setBackgroundColor(col);
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		StringBuilder sb = new StringBuilder();
 
-		if (isDarkColor(colBits)) {
-			text1.setTextColor(Color.WHITE);
-		} else {
-			text1.setTextColor(Color.BLACK);
+		float[] gravity = event.values;
+		final float alpha = (float) 0.8;
+		// Isolate the force of gravity with the low-pass filter.
+		gravity[0] = alpha * gravity[0] + (1 - alpha) * event.values[0];
+		gravity[1] = alpha * gravity[1] + (1 - alpha) * event.values[1];
+		gravity[2] = alpha * gravity[2] + (1 - alpha) * event.values[2];
+		sb.append("\nx:");
+		sb.append(gravity[0]);
+		sb.append("\ny:");
+		sb.append(gravity[1]);
+		etTxt1.setText(sb.toString());
+		motorMove((int) gravity[0], (int) gravity[1]);
+	}
+
+	private void motorMove(int x, int y) {
+		if ((x!= 0) || (y!= 0)) {
+			if (y < -3) {
+				sendToArduino(y, y);
+				return;
+			}
+			if (y > 4) {
+				sendToArduino(y, y);
+				return;
+			}
+			if (x > 4) {
+				sendToArduino(-x, x);
+				return;
+			}
+			if (x < -4) {
+				sendToArduino(-x, x);
+				return;
+			}
+			
+			Log.i(TAG, x+ "," + y);
+		}
+		else{
+			sendToArduino(0, 0);
 		}
 	}
 
-	private boolean isDarkColor(int[] color) {
-		if (color[0] * .3 + color[1] * .59 + color[2] * .11 > 150)
-			return false;
-		return true;
+	@Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+		// TODO Auto-generated method stub
 	}
-	public void randomColor(View v) {
-		Log.i(TAG, "randomColor");
-		int r = (int) (Math.random() * 255);
-		int g = (int) (Math.random() * 255);
-		int b = (int) (Math.random() * 255);
-		colorPicker.setColor(r, g, b);
-		SeekBar seek = (SeekBar) findViewById(R.id.seekBar1);
-		seek.setProgress(b);
-		String data = String.format("%03d", r) + String.format("%03d", g)
-				+ String.format("%03d", b);
-		mChatService.write(data.getBytes());
-		Log.i(TAG, "send: " + data);
+
+	@Override
+	public void onClick(View v) {
+		// TODO Auto-generated method stub
+		switch (v.getId()) {
+		case R.id.changemode:
+			changMode();
+			break;
+		case R.id.stop:
+			sendToArduino(0, 0);
+			break;
+		default:
+			break;
+		}
+	}
+
+	final int BUTTON_MODE = 1;
+	final int ACCELER_MODE = 2;
+	int flag_mode = BUTTON_MODE;
+	private void changMode() {
+		// make acceler not work
+		if (flag_mode == ACCELER_MODE) {
+			sensorManager.unregisterListener(this);
+			btn_up.setClickable(true);
+			btn_back.setClickable(true);
+			btn_left.setClickable(true);
+			btn_right.setClickable(true);
+			flag_mode = BUTTON_MODE; 
+			Log.i(TAG , "buton");
+			btn_change_mode.setText(R.string.change_to_button_mode);
+			Toast.makeText(this, R.string.change_to_button_mode, Toast.LENGTH_SHORT).show();;
+			btn_change_mode.setTextAppearance(BTcar.this, R.style.changemode_button);
+			etTxt1.setVisibility(EditText.GONE);
+			
+			return;
+		}
+		//make acceler work
+		if (flag_mode == BUTTON_MODE) {
+			sensorManager.registerListener(this,
+					sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+					SensorManager.SENSOR_DELAY_GAME);
+			btn_up.setClickable(false);
+			btn_back.setClickable(false);
+			btn_left.setClickable(false);
+			btn_right.setClickable(false);
+			flag_mode = ACCELER_MODE;
+			Log.i(TAG , "acceler");
+			btn_change_mode.setText(R.string.change_to_acceler_mode);
+			Toast.makeText(this, R.string.change_to_acceler_mode, Toast.LENGTH_SHORT).show();;
+			btn_change_mode.setTextAppearance(BTcar.this, R.style.changemode_acceler);
+			etTxt1.setVisibility(EditText.VISIBLE);
+			return;
+		}
 	}
 
 }
